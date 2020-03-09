@@ -27,6 +27,7 @@ use KgBot\Billy\Builders\PaymentTermBuilder;
 use KgBot\Billy\Builders\ProductBuilder;
 use KgBot\Billy\Builders\ProductGroupBuilder;
 use KgBot\Billy\Builders\ProductionOrderBuilder;
+use KgBot\Billy\Builders\SalesTaxRulesetBuilder;
 use KgBot\Billy\Builders\SupplierBuilder;
 use KgBot\Billy\Builders\Variation\VariationBuilder;
 use KgBot\Billy\Utils\Request;
@@ -61,7 +62,7 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\SupplierBuilder
+     * @return SupplierBuilder
      */
     public function suppliers()
     {
@@ -69,7 +70,7 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\ProductBuilder
+     * @return ProductBuilder
      */
     public function products()
     {
@@ -77,7 +78,7 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\CustomerBuilder
+     * @return CustomerBuilder
      */
     public function customers()
     {
@@ -85,7 +86,7 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\PaymentTermBuilder
+     * @return PaymentTermBuilder
      */
     public function paymentTerms( $organizationId )
     {
@@ -93,7 +94,7 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\CountryBuilder
+     * @return CountryBuilder
      */
     public function countries()
     {
@@ -101,7 +102,7 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\CurrencyBuilder
+     * @return CurrencyBuilder
      */
     public function currencies()
     {
@@ -109,7 +110,7 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\InvoiceBuilder
+     * @return InvoiceBuilder
      */
     public function invoices()
     {
@@ -117,7 +118,7 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\AccountBuilder
+     * @return AccountBuilder
      */
     public function accounts()
     {
@@ -125,18 +126,26 @@ class Billy
     }
 
     /**
-     * @return \KgBot\Billy\Builders\JournalBuilder
+     * @return JournalBuilder
      */
     public function journals()
     {
-        return new JournalBuilder( $this->request );
+        return new JournalBuilder($this->request);
     }
 
     /**
-     * @return \KgBot\Billy\Builders\BillBuilder
+     * @return BillBuilder
      */
     public function bills()
     {
-        return new BillBuilder( $this->request );
+        return new BillBuilder($this->request);
+    }
+
+    /**
+     * @return SalesTaxRulesetBuilder
+     */
+    public function sales_tax_rulesets(): SalesTaxRulesetBuilder
+    {
+        return new SalesTaxRulesetBuilder($this->request);
     }
 }
