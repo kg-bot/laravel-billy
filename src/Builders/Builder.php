@@ -8,192 +8,184 @@
 
 namespace KgBot\Billy\Builders;
 
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use KgBot\Billy\Utils\Model;
 use KgBot\Billy\Utils\Request;
 
 
 class Builder
 {
-    protected $entity;
-    /** @var Model */
-    protected $model;
-    protected $request;
+	protected $entity;
+	/** @var Model */
+	protected $model;
+	protected $request;
 
-    public function __construct( Request $request )
-    {
-        $this->request = $request;
-    }
+	public function __construct( Request $request ) {
+		$this->request = $request;
+	}
 
-    /**
-     * @param array $filters
-     *
-     * @return \Illuminate\Support\Collection|Model[]
-     */
-    public function get( $filters = [] )
-    {
-        $urlFilters = $this->parseFilters( $filters );
+	/**
+	 * @param array $filters
+	 *
+	 * @return Collection|Model[]
+	 */
+	public function get( $filters = [] ) {
+		$urlFilters = $this->parseFilters( $filters );
 
-        return $this->request->handleWithExceptions( function () use ( $urlFilters ) {
+		return $this->request->handleWithExceptions( function () use ( $urlFilters ) {
 
-            $response     = $this->request->client->get( "{$this->entity}{$urlFilters}" );
-            $responseData = json_decode( (string) $response->getBody() );
-            $items        = $this->parseResponse( $responseData );
-            $pages        = ( isset( $responseData->meta->paging ) ) ? $responseData->meta->paging->total : null;
+			$response     = $this->request->client->get( "{$this->entity}{$urlFilters}" );
+			$responseData = json_decode( (string) $response->getBody() );
+			$items        = $this->parseResponse( $responseData );
+			$pages        = ( isset( $responseData->meta->paging ) ) ? $responseData->meta->paging->total : null;
 
-            // todo implement paging
+			// todo implement paging
 
-            return $items;
-        } );
-    }
+			return $items;
+		} );
+	}
 
-    protected function parseFilters( $filters )
-    {
-        $urlFilters = '?limit=1500';
+	protected function parseFilters( $filters ) {
+		$urlFilters = '?limit=1500';
 
-        if ( count( $filters ) > 0 ) {
+		if ( count( $filters ) > 0 ) {
 
-            $urlFilters .= '&';
-            $i          = 1;
+			$urlFilters .= '&';
+			$i          = 1;
 
-            foreach ( $filters as $filter ) {
+			foreach ( $filters as $filter ) {
 
-                $urlFilters .= $filter[ 0 ] . $filter[ 1 ] .
-                               $this->escapeFilter( $filter[ 2 ] ); // todo fix arrays aswell ([1,2,3,...] string)
+				$urlFilters .= $filter[ 0 ] . $filter[ 1 ] .
+				               $this->escapeFilter( $filter[ 2 ] ); // todo fix arrays aswell ([1,2,3,...] string)
 
-                if ( count( $filters ) > $i ) {
+				if ( count( $filters ) > $i ) {
 
-                    $urlFilters .= '&'; // todo allow $or: also
-                }
+					$urlFilters .= '&'; // todo allow $or: also
+				}
 
-                $i++;
-            }
-        }
+				$i++;
+			}
+		}
 
-        return $urlFilters;
-    }
+		return $urlFilters;
+	}
 
-    protected function parseResponse( $response )
-    {
-        $fetchedItems = collect( $response->{$this->entity} );
-        $items        = collect( [] );
+	protected function parseResponse( $response ) {
+		$fetchedItems = collect( $response->{$this->entity} );
+		$items        = collect( [] );
 
-        foreach ( $fetchedItems as $index => $item ) {
+		foreach ( $fetchedItems as $index => $item ) {
 
 
-            /** @var Model $model */
-            $model = new $this->model( $this->request, $item );
+			/** @var Model $model */
+			$model = new $this->model( $this->request, $item );
 
-            $items->push( $model );
+			$items->push( $model );
 
-        }
+		}
 
-        return $items;
-    }
+		return $items;
+	}
 
-    private function escapeFilter( $variable )
-    {
-        $escapedStrings    = [
-            "$",
-            '(',
-            ')',
-            '*',
-            '[',
-            ']',
-            ',',
-        ];
-        $urlencodedStrings = [
-            '+',
-            ' ',
-        ];
-        foreach ( $escapedStrings as $escapedString ) {
+	private function escapeFilter( $variable ) {
+		$escapedStrings    = [
+			"$",
+			'(',
+			')',
+			'*',
+			'[',
+			']',
+			',',
+		];
+		$urlencodedStrings = [
+			'+',
+			' ',
+		];
+		foreach ( $escapedStrings as $escapedString ) {
 
-            $variable = str_replace( $escapedString, '$' . $escapedString, $variable );
-        }
-        foreach ( $urlencodedStrings as $urlencodedString ) {
+			$variable = str_replace( $escapedString, '$' . $escapedString, $variable );
+		}
+		foreach ( $urlencodedStrings as $urlencodedString ) {
 
-            $variable = str_replace( $urlencodedString, urlencode( $urlencodedString ), $variable );
-        }
+			$variable = str_replace( $urlencodedString, urlencode( $urlencodedString ), $variable );
+		}
 
-        return $variable;
-    }
+		return $variable;
+	}
 
-    public function find( $id )
-    {
-        return $this->request->handleWithExceptions( function () use ( $id ) {
+	public function find( $id ) {
+		return $this->request->handleWithExceptions( function () use ( $id ) {
 
-            $response     = $this->request->client->get( "{$this->entity}/{$id}" );
-            $responseData = collect( json_decode( (string) $response->getBody() ) );
+			$response     = $this->request->client->get( "{$this->entity}/{$id}" );
+			$responseData = collect( json_decode( (string) $response->getBody() ) );
 
-            return new $this->model( $this->request, $responseData->values()->{str_singular( $this->entity )} );
-        } );
-    }
+			return new $this->model( $this->request, $responseData->values()->{Str::singular( $this->entity )} );
+		} );
+	}
 
-    public function create( $data )
-    {
-        $data = [
-            str_singular( $this->entity ) => $data,
-        ];
+	public function create( $data ) {
+		$data = [
+			Str::singular( $this->entity ) => $data,
+		];
 
-        return $this->request->handleWithExceptions( function () use ( $data ) {
+		return $this->request->handleWithExceptions( function () use ( $data ) {
 
-            $response = $this->request->client->post( "{$this->entity}", [
-                'json' => $data,
-            ] );
+			$response = $this->request->client->post( "{$this->entity}", [
+				'json' => $data,
+			] );
 
-            $responseData = json_decode( (string) $response->getBody() );
+			$responseData = json_decode( (string) $response->getBody() );
 
-            return new $this->model( $this->request, $responseData->{$this->entity}[ 0 ] );
-        } );
-    }
+			return new $this->model( $this->request, $responseData->{$this->entity}[ 0 ] );
+		} );
+	}
 
-    public function getEntity()
-    {
-        return $this->entity;
-    }
+	public function getEntity() {
+		return $this->entity;
+	}
 
-    public function setEntity( $new_entity )
-    {
-        $this->entity = $new_entity;
+	public function setEntity( $new_entity ) {
+		$this->entity = $new_entity;
 
-        return $this->entity;
-    }
+		return $this->entity;
+	}
 
-    private function switchComparison( $comparison )
-    {
-        switch ( $comparison ) {
-            case '=':
-            case '==':
-                $newComparison = '$eq:';
-                break;
-            case '!=':
-                $newComparison = '$ne:';
-                break;
-            case '>':
-                $newComparison = '$gt:';
-                break;
-            case '>=':
-                $newComparison = '$gte:';
-                break;
-            case '<':
-                $newComparison = '$lt:';
-                break;
-            case '<=':
-                $newComparison = '$lte:';
-                break;
-            case 'like':
-                $newComparison = '$like:';
-                break;
-            case 'in':
-                $newComparison = '$in:';
-                break;
-            case '!in':
-                $newComparison = '$nin:';
-                break;
-            default:
-                $newComparison = "${$comparison}:";
-                break;
-        }
+	private function switchComparison( $comparison ) {
+		switch ( $comparison ) {
+			case '=':
+			case '==':
+				$newComparison = '$eq:';
+				break;
+			case '!=':
+				$newComparison = '$ne:';
+				break;
+			case '>':
+				$newComparison = '$gt:';
+				break;
+			case '>=':
+				$newComparison = '$gte:';
+				break;
+			case '<':
+				$newComparison = '$lt:';
+				break;
+			case '<=':
+				$newComparison = '$lte:';
+				break;
+			case 'like':
+				$newComparison = '$like:';
+				break;
+			case 'in':
+				$newComparison = '$in:';
+				break;
+			case '!in':
+				$newComparison = '$nin:';
+				break;
+			default:
+				$newComparison = "${$comparison}:";
+				break;
+		}
 
-        return $newComparison;
-    }
+		return $newComparison;
+	}
 }
