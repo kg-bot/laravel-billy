@@ -36,4 +36,21 @@ class CustomerBuilder extends Builder
 
         return $items;
     }
+
+    /**
+     * @param int $id
+     *
+     * @return KgBot\Billy\Models\Customer
+     */
+    public function getWithID( $id ) 
+    {
+        return $this->request->handleWithExceptions( function () use ( $id ) {
+
+            $response     = $this->request->client->get( "{$this->entity}/{$id}" );
+            $responseData = json_decode( (string) $response->getBody() );
+
+            return new $this->model( $this->request, $responseData->contact );
+        } );
+    }
+
 }
